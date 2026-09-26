@@ -78,6 +78,60 @@ SKILL_QUESTIONS: Dict[str, List[Dict[str, str]]] = {
             "a": "VMs virtualize hardware and run a complete guest OS on top of a hypervisor. Docker containers share the host OS kernel and isolate user spaces, making them lightweight and fast to boot.",
             "tip": "Highlight resource utilization and startup speed benefits."
         }
+    ],
+    "System Design": [
+        {
+            "q": "How would you design a scalable URL Shortener service like TinyURL handling 100M URLs per day?",
+            "a": "Use Base62 encoding on unique 64-bit auto-incrementing IDs (generated via Snowflake). Employ a distributed cache (Redis) for hot URL lookups, and partition the database by hash of the short key with read replicas.",
+            "tip": "Cover both functional and non-functional requirements (read-to-write ratio, latency targets, 5-year storage estimates)."
+        },
+        {
+            "q": "Explain the difference between Strong Consistency and Eventual Consistency with examples.",
+            "a": "Strong consistency guarantees every read receives the most recent write (RDBMS transactions). Eventual consistency allows temporary replication lag across replicas, guaranteeing reads eventually converge (DNS, Amazon DynamoDB, social feeds).",
+            "tip": "Reference the CAP theorem and discuss trade-offs between latency and strict ordering."
+        }
+    ],
+    "Git": [
+        {
+            "q": "What is the difference between 'git merge' and 'git rebase'?",
+            "a": "'git merge' creates a new commit that ties the histories of both branches together, preserving chronological order. 'git rebase' rewrites the commit history by moving the base of your branch onto the target branch, producing a clean linear history.",
+            "tip": "Emphasize the golden rule of rebasing: never rebase a shared public branch."
+        }
+    ],
+    "Docker": [
+        {
+            "q": "What are multi-stage builds in Docker and why are they used?",
+            "a": "Multi-stage builds allow using multiple FROM statements in a single Dockerfile. You can compile your application with full build tools in an initial stage, then copy only the finalized executable or artifact into a minimal base image (like Alpine or Distroless), minimizing image size and attack surface.",
+            "tip": "Mention how it optimizes layer caching and reduces deployment bandwidth."
+        }
+    ],
+    "Kubernetes": [
+        {
+            "q": "Explain the roles of Pods, ReplicaSets, and Deployments in Kubernetes.",
+            "a": "A Pod is the smallest deployable unit containing one or more tightly coupled containers. A ReplicaSet ensures a specified number of identical pod replicas are running at any time. A Deployment provides declarative updates for Pods and ReplicaSets, enabling rolling upgrades and rollbacks.",
+            "tip": "Discuss zero-downtime deployment strategies like RollingUpdate vs Recreate."
+        }
+    ],
+    "C++": [
+        {
+            "q": "Explain the difference between std::unique_ptr, std::shared_ptr, and std::weak_ptr in modern C++.",
+            "a": "std::unique_ptr owns a resource exclusively and cannot be copied (only moved). std::shared_ptr uses reference counting to allow multiple owners. std::weak_ptr provides a non-owning observer to break cyclic reference loops between shared_ptrs.",
+            "tip": "Explain the RAII (Resource Acquisition Is Initialization) idiom."
+        }
+    ],
+    "Node.js": [
+        {
+            "q": "How does the Node.js Event Loop handle non-blocking asynchronous I/O?",
+            "a": "Node.js runs single-threaded JavaScript execution on the V8 engine, while offloading I/O tasks (file system, network) to the C++ Libuv thread pool. When an I/O task completes, Libuv queues its callback into event loop phases (Timers, Poll, Check) to execute on the main thread.",
+            "tip": "Explain process.nextTick() vs setImmediate() execution priorities."
+        }
+    ],
+    "Problem Solving": [
+        {
+            "q": "How do you systematically approach an unfamiliar algorithmic problem under interview pressure?",
+            "a": "1. Clarify constraints and edge cases (empty inputs, negative numbers, scale). 2. Discuss a brute-force baseline to establish an upper bound. 3. Identify recurring patterns (Two Pointers, Sliding Window, Monotonic Stack, DP). 4. Code cleanly while articulating time and space complexities.",
+            "tip": "Always walk through a test case manually before declaring your code complete."
+        }
     ]
 }
 
@@ -103,38 +157,47 @@ BEHAVIORAL_QUESTIONS: List[Dict[str, str]] = [
 
 def generate_interview_prep(role: str, matched_skills: List[str], missing_skills: List[str]) -> Dict[str, Any]:
     """
-    Generate an interview question set:
+    Generate an extensive interview question set:
     - Technical questions on skills candidate knows
     - High-frequency questions on missing skills they should study
-    - Behavioral questions
+    - Core system design & algorithmic fundamentals
+    - Behavioral questions with STAR frameworks
     """
     technical_known = []
-    for skill in matched_skills:
+    for skill in (matched_skills or []):
         if skill in SKILL_QUESTIONS:
             for q_data in SKILL_QUESTIONS[skill]:
                 technical_known.append({"skill": skill, **q_data})
 
     gap_questions = []
-    for skill in missing_skills:
+    for skill in (missing_skills or []):
         if skill in SKILL_QUESTIONS:
             for q_data in SKILL_QUESTIONS[skill]:
                 gap_questions.append({"skill": skill, **q_data})
 
-    # Ensure fallbacks if specific skills aren't in dictionary
-    if not technical_known:
-        technical_known = [
-            {
-                "skill": "General CS Foundations",
-                "q": f"How do you organize modular architecture and write unit tests for a {role} project?",
-                "a": "Separate code into clear layers (UI, business logic, data access). Write test cases covering happy path, boundary values, and error states.",
-                "tip": "Mention Clean Code principles and CI/CD pipelines."
-            }
-        ]
+    # Core algorithmic & architectural baseline
+    core_questions = []
+    for cs in ["Data Structures", "Algorithms", "System Design", "Problem Solving"]:
+        if cs in SKILL_QUESTIONS:
+            for q_data in SKILL_QUESTIONS[cs]:
+                core_questions.append({"skill": cs, **q_data})
+
+    # Fallback if specific skills aren't in dictionary
+    if not technical_known and not gap_questions:
+        gap_questions = core_questions[:4]
+
+    all_questions = []
+    seen = set()
+    for item in (technical_known + gap_questions + core_questions):
+        if item["q"] not in seen:
+            seen.add(item["q"])
+            all_questions.append(item)
 
     return {
         "role": role,
-        "technical_known": technical_known[:4],
-        "gap_questions": gap_questions[:4],
+        "all_questions": all_questions,
+        "technical_known": technical_known,
+        "gap_questions": gap_questions,
         "behavioral": BEHAVIORAL_QUESTIONS,
     }
 

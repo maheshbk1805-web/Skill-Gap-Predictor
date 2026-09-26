@@ -240,8 +240,36 @@ def segment_resume_sections(text: str) -> Dict[str, str]:
     return {sec: "\n".join(lines).strip() for sec, lines in section_buffer.items()}
 
 
-def parse_resume(file_bytes: bytes, file_name: str) -> Dict[str, Any]:
-    """Parse resume document bytes and return structured representation."""
+def parse_resume(input_data: Any, file_name: str = "") -> Dict[str, Any]:
+    """Parse resume document bytes, file path, or file-like object and return structured representation."""
+    import os
+    from pathlib import Path
+
+    if isinstance(input_data, (str, Path)):
+        p = Path(input_data)
+        if p.exists() and p.is_file():
+            if not file_name:
+                file_name = p.name
+            with open(p, "rb") as f:
+                file_bytes = f.read()
+        else:
+            file_bytes = str(input_data).encode("utf-8")
+            if not file_name:
+                file_name = "resume.txt"
+    elif isinstance(input_data, bytes):
+        file_bytes = input_data
+        if not file_name:
+            file_name = "resume.pdf"
+    elif hasattr(input_data, "read"):
+        file_bytes = input_data.read()
+        if not file_name:
+            file_name = getattr(input_data, "name", "resume.pdf")
+    else:
+        file_bytes = b""
+        if not file_name:
+            file_name = "resume.txt"
+
+    file_name = os.path.basename(str(file_name))
     ext = file_name.split(".")[-1].lower() if "." in file_name else ""
 
     if ext == "pdf":

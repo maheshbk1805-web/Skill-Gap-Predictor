@@ -65,6 +65,10 @@ def fetch_job_description_from_url(url: str) -> Dict[str, Any]:
         }
 
 
+# Alias for backward and cross-module compatibility
+scrape_career_url = fetch_job_description_from_url
+
+
 def get_all_benchmark_roles() -> List[Dict[str, Any]]:
     """Load all companies and roles from company_roles.json into a flat list."""
     if not os.path.exists(DATA_FILE):
